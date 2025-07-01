@@ -72,6 +72,9 @@ class Bird(pg.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.center = xy
         self.speed = 10
+        self.state = "normal"
+        self.hyper_life = 500
+
 
     def change_img(self, num: int, screen: pg.Surface):
         """
@@ -104,6 +107,13 @@ class Bird(pg.sprite.Sprite):
         if not (sum_mv[0] == 0 and sum_mv[1] == 0):
             self.dire = tuple(sum_mv)
             self.image = self.imgs[self.dire]
+
+        if self.state == "hyper":
+            if self.hyper_life<0:
+                self.state="normal"
+            self.hyper_life-=1
+            self.image = pg.transform.laplacian(self.image)
+
         screen.blit(self.image, self.rect)
 
 
@@ -372,6 +382,11 @@ def main():
 
             if event.type == pg.KEYDOWN and event.key == pg.K_SPACE:
                 beams.add(Beam(bird))
+            if event.type == pg.KEYDOWN and event.key == pg.K_RSHIFT:
+                if score.value>=100:
+                    score.value-=100
+                    bird.state="hyper"
+                    bird.hyper_life=500
             if event.type == pg.KEYDOWN and event.key == pg.K_RETURN:  # Enterキーで重力を発動
                 if score.value >= 200:  # スコアが200以上のときのみ発動
                     score.value -=200  # スコアを200減らす
@@ -412,11 +427,15 @@ def main():
             bird.change_img(6, screen)  # こうかとん喜びエフェクト
 
         for bomb in pg.sprite.spritecollide(bird, bombs, True):  # こうかとんと衝突した爆弾リスト
+            if bird.state == "hyper":
+                score.value +=1          
+                break
             bird.change_img(8, screen)  # こうかとん悲しみエフェクト
             score.update(screen)
             pg.display.update()
             time.sleep(2)
             return
+        
         
         # 毎フレームのEMP処理
         if emp:
